@@ -4,11 +4,7 @@
 
 - [Design](#Desgin)
 - [Install LimaCharlie](#install-limacharlie)
-- [Installation](#installation)
-- [Usage](#usage)
-- [Configuration](#configuration)
-- [Contributing](#contributing)
-- [License](#license)
+- [Create Threat Simulation with Lazagne](#create-threat-simulation-with-lazagne)
 
 
 ## Desgin
@@ -113,3 +109,115 @@ Check that the **LimaCharlie service** is running via the Windows Services manag
 Alternatively, go to `Sensors -> Sensors List` in the LimaCharlie dashboard. You should see your Windows Server listed as a connected sensor.
 
 ![Sensor List on Dashboard](sensorlist.png)
+
+
+## Create Threat Simulation with Lazagne
+
+### Step 1: Download the Hack Tool
+
+We will use **Lazagne**, a credential dumping tool, as our simulated attack.
+
+- Download Lazagne on the Windows Server machine.
+- You can find it [here](https://github.com/AlessandroZ/LaZagne) (use the precompiled binary).
+- **Important:** Disable Windows Defender before running it, as it will block the tool.
+
+Once downloaded, open **PowerShell** and run Lazagne like this:
+
+![Lazagne Execution](lazagne.png)
+
+---
+
+### Step 2: Detect the Tool in LimaCharlie
+
+Now, switch to the **LimaCharlie dashboard** to observe if the tool activity was detected:
+
+1. Go to `Sensors -> Sensor List`.
+2. Click on your Windows Server machine.
+3. In the sidebar, go to the **Timeline** tab.
+4. Search for `lazagne`.
+
+You should see events like this:
+
+![Lazagne Timeline Events](lazagne-event.png)
+
+---
+
+### Step 3: Create a Detection Rule
+
+To build a detection rule specific to Lazagne, go to:
+
+```
+Automation -> D&R Rules
+```
+
+After reviewing the documentation and with help from ChatGPT, I created a rule that has two parts: **Detection Logic** and **Response Metadata**.
+
+#### 🧠 Detection Logic
+
+```yaml
+events:
+  - NEW_PROCESS
+  - EXISTING_PROCESS
+op: and
+rules:
+  - op: is windows
+  - op: or
+    rules:
+      - case sensitive: false
+        op: ends with
+        path: event/FILE_PATH
+        value: lazagne.exe
+      - case sensitive: false
+        op: contains
+        path: event/COMMAND_LINE
+        value: lazagne.exe
+      - case sensitive: false
+        op: is
+        path: event/HASH
+        value: 'dc06d62ee95062e714f2566c95b8edaabfd387023b1bf98a09078b84007d5268'
+```
+
+#### ⚙️ Response Metadata
+
+```yaml
+- action: report
+  metadata:
+    - author: msferhet
+    - description: Detect Lazagne (SOAR EDR Tool)
+    - falsepositive: to moon
+    - level: medium
+  tags:
+    - attack credential access
+  name: detect - hacktool - lazagne (SOAR EDR Tool)
+```
+
+---
+
+### Step 4: Test the Rule
+
+Once the rule is created, scroll down and click **Create**.
+
+Then:
+
+1. Under the rule, find and click on **Target Event**.
+2. Go back to the **Timeline**, find a Lazagne-related event.
+3. Copy the event JSON and paste it into the test field.
+4. Click **Test Event**.
+
+![Test Event](Test-event.png)
+
+---
+
+### Step 5: Validate Detection
+
+Re-run Lazagne on your Windows Server.
+
+Then:
+
+1. Go back to LimaCharlie.
+2. Navigate to the **Detection** tab.
+3. Wait a moment — you should see a detection alert like this:
+
+![Detection Alert](detection.png)
+
+✅ **Success!** Your custom rule is now actively detecting malicious tool usage.
