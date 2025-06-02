@@ -5,6 +5,7 @@
 - [Design](#Desgin)
 - [Install LimaCharlie](#install-limacharlie)
 - [Create Threat Simulation with Lazagne](#create-threat-simulation-with-lazagne)
+- [Connect EDR to SOAR](#connect-edr-to-soar)
 
 
 ## Desgin
@@ -221,3 +222,55 @@ Then:
 ![Detection Alert](detection.png)
 
 ✅ **Success!** Your custom rule is now actively detecting malicious tool usage.
+
+## Connect EDR to SOAR
+
+Now let's connect our **EDR (LimaCharlie)** to our **SOAR platform (Tines)**.
+
+### Step 1: Create a Tines Account
+
+1. Go to [tines.com](https://tines.com) and sign up for a free account.
+2. Inside your **Story**, delete all default actions to start clean.
+3. Add a new **Webhook** action and name it something like `EDR-SOAR-Hook`.
+4. Copy the generated Webhook URL.
+
+![Tines Webhook](Tines-webhook.png)
+
+---
+
+### Step 2: Configure LimaCharlie Output
+
+Next, configure LimaCharlie to forward detection alerts to Tines.
+
+1. In the LimaCharlie dashboard, go to `Output -> Add Output`.
+2. Set the following values:
+   - **Stream**: `detection`
+   - **Destination**: `tines`
+   - **Name**: Choose any descriptive name (e.g., `EDR_to_Tines`)
+   - **Destination Host**: Paste the Webhook URL you copied from Tines
+
+
+---
+
+### Step 3: Trigger a Detection
+
+Run **Lazagne** again on your Windows Server to generate a detection alert. This serves as a sample event to verify the connection.
+
+After running the tool, refresh your LimaCharlie samples by clikc on `Refresh Samples`. You should see recent detection logs being sent:
+
+![LimaCharlie Sample Output](lima-sample.png)
+
+---
+
+### Step 4: Verify Events in Tines
+
+Switch back to Tines and:
+
+1. Click on your **Webhook** action.
+2. Go to the **Events**.
+
+You should see the alert received from LimaCharlie:
+
+![Tines Sample Event](tines-sample.png)
+
+✅ The integration is now successfully established and active!
