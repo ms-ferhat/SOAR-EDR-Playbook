@@ -2,12 +2,26 @@
 
 ## Table of Contents
 
+- [Overview](#overview)
 - [Design](#Desgin)
 - [Install LimaCharlie](#install-limacharlie)
-- [Create Threat Simulation with Lazagne](#create-threat-simulation-with-lazagne)
+- [Create Threat Simulation](#create-threat-simulation)
 - [Connect EDR to SOAR](#connect-edr-to-soar)
 - [Automation](#automation)
 
+## Overview
+
+This project demonstrates the integration of LimaCharlie as an Endpoint Detection and Response (EDR) solution with Tines as a Security Orchestration, Automation, and Response (SOAR) platform. It walks through setting up LimaCharlie on a Windows Server virtual machine, creating custom detection rules for malicious tools like LaZagne, and automating incident response workflows through Tines.
+
+Key capabilities include:
+
+- Real-time detection of known attack behaviors using LimaCharlie.
+- Sending detection alerts to Tines via webhooks.
+- Delivering notifications to security analysts through Slack and email.
+- Providing analysts with an interactive decision page to approve or reject isolation actions.
+- Automatically isolating infected endpoints and confirming the action with follow-up alerts.
+
+The result is a functional, end-to-end SOAR pipeline suitable for small- to medium-scale incident response automation projects.
 
 ## Desgin
 
@@ -113,7 +127,7 @@ Alternatively, go to `Sensors -> Sensors List` in the LimaCharlie dashboard. You
 ![Sensor List on Dashboard](sensorlist.png)
 
 
-## Create Threat Simulation with Lazagne
+## Create Threat Simulation
 
 ### Step 1: Download the Hack Tool
 
