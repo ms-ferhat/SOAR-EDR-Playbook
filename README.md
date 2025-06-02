@@ -6,6 +6,7 @@
 - [Install LimaCharlie](#install-limacharlie)
 - [Create Threat Simulation with Lazagne](#create-threat-simulation-with-lazagne)
 - [Connect EDR to SOAR](#connect-edr-to-soar)
+- [Automation](#automation)
 
 
 ## Desgin
@@ -274,3 +275,127 @@ You should see the alert received from LimaCharlie:
 ![Tines Sample Event](tines-sample.png)
 
 ✅ The integration is now successfully established and active!
+
+## Automation
+
+### Connect Slack
+
+First, create a **Slack** account and set up a **new workspace**. Inside the workspace, create a channel called `#alerts`.
+
+1. In Slack, click `More` on the left sidebar, then go to `Automation -> Apps`.
+2. Search for `Tines` and follow the steps to install the Tines app in Slack.
+
+To connect Tines:
+
+1. In your Tines story, click on any empty space.
+2. On the right-hand panel, click `Credentials` and search for `Slack`.
+3. Click on `Use Slack App for Tines` to authorize the connection.
+
+Next, in Tines:
+
+1. On the left, search for the **Slack** template.
+2. Add the **Send a Message** action to your story.
+3. In Slack, right-click on the `#alerts` channel and select `View Channel Details`. Scroll to the bottom to find and copy the **Channel ID**.
+4. Paste the Channel ID into the Tines action.
+
+Now we’ll build the Slack message. Go back to your **Webhook** action in Tines, open an event, and use the event data to craft your message. Here’s a sample:
+
+```yaml
+Title: <<edr_soar_hook.body.cat>>
+Time: <<edr_soar_hook.body.gen_time>>
+Computer Name: <<edr_soar_hook.body.detect.routing.hostname>>
+Command Line: <<edr_soar_hook.body.detect.event.COMMAND_LINE>>
+User Name: <<edr_soar_hook.body.detect.event.PARENT.USER_NAME>>
+Sensor ID: <<edr_soar_hook.body.detect.routing.sid>>
+Link: <<edr_soar_hook.body.link>>
+```
+
+Paste this message template into the **Slack message body** field (adjust based on your webhook name).
+
+To test the Slack integration, click `Test` on the Slack action and select an event.
+
+![Slack Alert](slack-alert.png)
+
+---
+
+### Send Email Notifications
+
+To send alerts via email:
+
+1. Add the **Email** template from the Tines library.
+2. Link it to the same webhook.
+3. In the `Recipients` field, enter your email.
+4. Copy the same alert message from Slack into the `Body` field.
+
+Test it using the same method as above.
+
+![Email Alert](email-alert.png)
+
+You can customize the email body further using HTML later.
+
+---
+
+### Create Analyst Response Page
+
+To create a user prompt:
+
+1. From the Tines tools, drag the **Page** action into your story and link it to the webhook.
+2. Click the Page and hit `Edit` to design it. Add a header, text block, boolean input, and submit button.
+
+![Action Page](action-page.png)
+
+Now create the "NO" response path:
+
+1. Add a **Trigger** action from templates or copy one.
+2. Set a rule where `page_action.body.isolate` equals `false`.
+3. Link this to a Slack action and change the message to:
+
+```yaml
+Computer <<edr_soar_hook.body.detect.routing.hostname>> is infected. Please investigate.
+```
+
+To test, go to the webhook, open `Events`, and re-send an event to the action page. Submit the form with `NO` selected and check Slack for the message.
+
+Now create the "YES" response path:
+
+1. Copy the previous Trigger or add a new one. Change the rule to `true`.
+2. Search for **LimaCharlie** in Tines templates and add the **Isolate Sensor** action.
+
+Configure the action:
+
+* In the `URL` field, enter: `<<edr_soar_hook.body.detect.routing.sid>>`
+
+Then, create a credential in Tines:
+
+1. In LimaCharlie, go to `Access Management -> REST API` and copy the **Org JWT**.
+2. In Tines, go to `Credentials`, create a new credential of type `Text`.
+3. Name it, paste the JWT in `Value`, set the domain as `*limacharlie.io`.
+4. Save it.
+
+In the LimaCharlie Tines action, under `Headers -> Bearer`, enter:
+
+```
+CREDENTIAL.name-of-your-credential
+```
+
+Test the flow by generating a new event and selecting `YES`. You should see the sensor status change:
+
+* **Before Isolation:**
+  ![Before Isolation](before.png)
+
+* **After Isolation:**
+  ![After Isolation](after.png)
+
+Try pinging `google.com` from the machine to verify the isolation:
+
+![Connection Test](connection-test.png)
+
+Lastly, notify the team via Slack by duplicating the Slack action and changing the message to:
+
+```yaml
+Sensor <<edr_soar_hook.body.detect.routing.sid>> has been isolated.
+```
+
+You should now have a complete automation workflow like this:
+
+![Tines Diagram](tines-diagram.png)
